@@ -120,13 +120,7 @@ export default function Login({ onLoginSuccess }) {
           >
             {isSubmitting ? '認証中...' : 'ログイン'}
           </button>
-        </form>
-
-        <div style={{ marginTop: '30px', borderTop: '1px solid var(--border)', paddingTop: '20px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          <p>デモアカウント情報:</p>
-          <p style={{ marginTop: '4px' }}>管理者: <strong>admin</strong> / <strong>admin123</strong></p>
-          <p style={{ marginTop: '2px' }}>従業員: <strong>EMP001</strong> / <strong>yamada123</strong></p>
-        </div>
+        </form>        
       </div>
     </div>
   );
