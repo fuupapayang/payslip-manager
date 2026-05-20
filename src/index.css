@@ -1,0 +1,768 @@
+/* 明治屋クリエイト - Global CSS Design System */
+
+:root {
+  /* Colors */
+  --primary-navy: #0f172a;
+  --primary-navy-light: #1e293b;
+  --accent-blue: #1e3a8a; /* Deep Navy */
+  --accent-blue-hover: #172554;
+  --accent-light: #eff6ff;
+  --accent-sky: #3b82f6;
+  --accent-sky-hover: #2563eb;
+  
+  --bg-app: #f8fafc; /* Light Gray */
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+  
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  
+  /* Status Colors */
+  --status-active-bg: #dcfce7;
+  --status-active-text: #166534;
+  --status-retired-bg: #fee2e2;
+  --status-retired-text: #991b1b;
+  
+  --status-confirmed-bg: #e0f2fe;
+  --status-confirmed-text: #075985;
+  --status-draft-bg: #fef3c7;
+  --status-draft-text: #92400e;
+
+  /* Typography */
+  --font-family: 'Noto Sans JP', 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Spacing & Borders */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  
+  --sidebar-width: 260px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Base & Reset --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* --- Layout Structure --- */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: 40px;
+  min-width: 0;
+  transition: margin-left 0.3s var(--ease-out);
+}
+
+.main-content.no-sidebar {
+  margin-left: 0;
+  padding: 0;
+}
+
+/* --- Login Screen --- */
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.3s var(--ease-out);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-navy);
+  margin-top: 12px;
+}
+
+.login-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  background-color: var(--primary-navy);
+  color: var(--text-inverse);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+}
+
+.sidebar-brand {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-menu {
+  flex: 1;
+  padding: 24px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-item button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.sidebar-item button:hover {
+  color: var(--text-inverse);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-item.active button {
+  color: var(--text-inverse);
+  background-color: var(--accent-sky);
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-badge {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-badge-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-badge-role {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--text-inverse);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* --- Cards & General Layout Components --- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-navy);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--primary-navy);
+  border-bottom: 2px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+/* --- Forms & Inputs --- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.form-group label .required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.form-control {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: #ffffff;
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-sky);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+}
+
+.form-control:disabled {
+  background-color: #f1f5f9;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.form-error {
+  color: #ef4444;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background-color: var(--accent-blue);
+  color: var(--text-inverse);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-blue-hover);
+}
+
+.btn-secondary {
+  background-color: #ffffff;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: var(--text-inverse);
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+/* --- Tables --- */
+.table-responsive {
+  overflow-x: auto;
+  margin: 0 -24px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #f8fafc;
+  padding: 14px 24px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* --- Badges --- */
+.badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-active { background-color: var(--status-active-bg); color: var(--status-active-text); }
+.badge-retired { background-color: var(--status-retired-bg); color: var(--status-retired-text); }
+.badge-confirmed { background-color: var(--status-confirmed-bg); color: var(--status-confirmed-text); }
+.badge-draft { background-color: var(--status-draft-bg); color: var(--status-draft-text); }
+
+/* --- Dashboard Stats --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 24px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+  margin-top: 8px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--accent-light);
+  color: var(--accent-sky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Filters & Search Banner --- */
+.filters-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  background-color: #f1f5f9;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+}
+
+/* --- Salary Slip Layout --- */
+.payslip-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  box-shadow: var(--shadow-sm);
+}
+
+.payslip-header {
+  border-bottom: 3px double var(--primary-navy);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.payslip-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--primary-navy);
+}
+
+.payslip-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 24px;
+  font-size: 0.88rem;
+}
+
+.payslip-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payslip-meta-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.payslip-meta-label {
+  width: 100px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.payslip-meta-val {
+  flex: 1;
+}
+
+/* Net Pay Highlight Block */
+.payslip-net-highlight {
+  background-color: var(--primary-navy);
+  color: var(--text-inverse);
+  padding: 20px 30px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.payslip-net-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.payslip-net-val {
+  font-size: 2.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grid for Earnings & Deductions side-by-side */
+.payslip-table-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.payslip-block-title {
+  background-color: #f1f5f9;
+  border-left: 4px solid var(--primary-navy);
+  padding: 6px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--primary-navy);
+  margin-bottom: 10px;
+}
+
+.payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+}
+
+.payslip-table th, 
+.payslip-table td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+}
+
+.payslip-table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.payslip-table td.amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-summary-row {
+  font-weight: 700;
+  background-color: #f8fafc;
+}
+
+/* Attendance Info Block */
+.payslip-attendance-block {
+  margin-bottom: 32px;
+}
+
+.payslip-attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.attendance-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border-right: 1px solid var(--border);
+}
+
+.attendance-item:last-child {
+  border-right: none;
+}
+
+.attendance-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.attendance-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.payslip-footer {
+  margin-top: 40px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- Print Stylesheet for A4 Portrait PDF Output --- */
+@media print {
+  /* Reset and Page settings */
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+  
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+  
+  /* Hide unnecessary elements */
+  .sidebar,
+  .page-header,
+  .print-hide,
+  .btn,
+  .alert,
+  header,
+  footer:not(.payslip-footer) {
+    display: none !important;
+  }
+  
+  /* Expand content to full viewport width */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* Re-style slips container to look standard on paper */
+  .payslip-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .payslip-header h1 {
+    font-size: 22pt !important;
+    color: #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  .payslip-net-highlight {
+    background-color: #f1f5f9 !important;
+    border: 2px solid #0f172a !important;
+    color: #000000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .payslip-net-val {
+    color: #000000 !important;
+  }
+
+  .payslip-block-title {
+    background-color: #f1f5f9 !important;
+    border-left: 4px solid #000000 !important;
+    color: #000000 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .payslip-table th {
+    background-color: #f8fafc !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .payslip-table th, 
+  .payslip-table td {
+    border: 1px solid #94a3b8 !important;
+  }
+  
+  .payslip-attendance-grid {
+    border: 1px solid #94a3b8 !important;
+  }
+
+  .attendance-item {
+    border-right: 1px solid #94a3b8 !important;
+  }
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Helpers --- */
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding: 24px;
+  }
+  
+  .payslip-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .payslip-table-grid {
+    grid-template-columns: 1fr;
+  }
+}
