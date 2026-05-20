@@ -120,7 +120,11 @@ export default function Login({ onLoginSuccess }) {
           >
             {isSubmitting ? '認証中...' : 'ログイン'}
           </button>
-        </form>        
+        </form>
+        
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+          <p>※ パスワードをお忘れの場合は、管理者へお問い合わせください。</p>
+        </div>
       </div>
     </div>
   );

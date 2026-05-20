@@ -114,6 +114,7 @@ export async function seedDatabase() {
             furigana: 'カンリシャ タロウ',
             email: 'admin@payslip.jp',
             role: 'admin',
+            password: 'admin123',
             passwordHash: await hashPassword('admin123'),
             department: '管理部',
             employmentType: '正社員',
@@ -142,6 +143,7 @@ export async function seedDatabase() {
             furigana: 'ヤマダ タロウ',
             email: 'yamada@payslip.jp',
             role: 'employee',
+            password: 'yamada123',
             passwordHash: await hashPassword('yamada123'),
             department: '開発部',
             employmentType: '正社員',
@@ -170,6 +172,7 @@ export async function seedDatabase() {
             furigana: 'タナカ ハナコ',
             email: 'tanaka@payslip.jp',
             role: 'employee',
+            password: 'tanaka123',
             passwordHash: await hashPassword('tanaka123'),
             department: '総務部',
             employmentType: '正社員',
@@ -198,6 +201,7 @@ export async function seedDatabase() {
             furigana: 'サトウ ケンタ',
             email: 'sato@payslip.jp',
             role: 'employee',
+            password: 'sato123',
             passwordHash: await hashPassword('sato123'),
             department: '営業部',
             employmentType: 'アルバイト',
@@ -402,6 +406,7 @@ export async function seedDatabase() {
         furigana: 'カンリシャ タロウ',
         email: 'admin@payslip.jp',
         role: 'admin',
+        password: 'admin123',
         passwordHash: await hashPassword('admin123'),
         department: '管理部',
         employmentType: '正社員',
@@ -430,6 +435,7 @@ export async function seedDatabase() {
         furigana: 'ヤマダ タロウ',
         email: 'yamada@payslip.jp',
         role: 'employee',
+        password: 'yamada123',
         passwordHash: await hashPassword('yamada123'),
         department: '開発部',
         employmentType: '正社員',
@@ -458,6 +464,7 @@ export async function seedDatabase() {
         furigana: 'タナカ ハナコ',
         email: 'tanaka@payslip.jp',
         role: 'employee',
+        password: 'tanaka123',
         passwordHash: await hashPassword('tanaka123'),
         department: '総務部',
         employmentType: '正社員',
@@ -486,6 +493,7 @@ export async function seedDatabase() {
         furigana: 'サトウ ケンタ',
         email: 'sato@payslip.jp',
         role: 'employee',
+        password: 'sato123',
         passwordHash: await hashPassword('sato123'),
         department: '営業部',
         employmentType: 'アルバイト',
@@ -572,20 +580,27 @@ export async function saveEmployee(employeeData) {
 
   // If plainTextPassword is provided, hash it
   if (employee.plainTextPassword) {
+    employee.password = employee.plainTextPassword;
     employee.passwordHash = await hashPassword(employee.plainTextPassword);
     delete employee.plainTextPassword;
   }
 
   if (idx > -1) {
-    // Preserve old passwordHash if not changing password
+    // Preserve old password/passwordHash if not changing password
+    if (!employee.password) {
+      employee.password = cachedEmployees[idx].password || '';
+    }
     if (!employee.passwordHash) {
       employee.passwordHash = cachedEmployees[idx].passwordHash;
     }
     cachedEmployees[idx] = employee;
   } else {
     // Generate default password if not provided
+    if (!employee.password) {
+      employee.password = 'temp123';
+    }
     if (!employee.passwordHash) {
-      employee.passwordHash = await hashPassword('temp123'); // Default password
+      employee.passwordHash = await hashPassword(employee.password);
     }
     cachedEmployees.push(employee);
   }
@@ -600,6 +615,24 @@ export async function saveEmployee(employeeData) {
   }
 
   return employee;
+}
+
+export async function changePassword(userId, newPassword) {
+  const idx = cachedEmployees.findIndex(emp => emp.id === userId);
+  if (idx > -1) {
+    cachedEmployees[idx].password = newPassword;
+    cachedEmployees[idx].passwordHash = await hashPassword(newPassword);
+    
+    writeData(KEY_EMPLOYEES, cachedEmployees);
+    
+    if (useFirebase && db) {
+      setDoc(doc(db, "employees", userId), cachedEmployees[idx]).catch(err => {
+        console.error("Failed to sync password change to Firestore:", err);
+      });
+    }
+    return true;
+  }
+  return false;
 }
 
 export function deleteEmployee(id) {

@@ -55,6 +55,12 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
                   <span>システム設定</span>
                 </button>
               </li>
+              <li className={`sidebar-item ${currentView === 'password-change' ? 'active' : ''}`}>
+                <button onClick={() => navigateTo('password-change')}>
+                  <Lock size={18} />
+                  <span>パスワード変更</span>
+                </button>
+              </li>
             </>
           ) : (
             <>
@@ -62,6 +68,12 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
                 <button onClick={() => navigateTo('employee-payslips')}>
                   <FileSpreadsheet size={18} />
                   <span>給与明細一覧</span>
+                </button>
+              </li>
+              <li className={`sidebar-item ${currentView === 'password-change' ? 'active' : ''}`}>
+                <button onClick={() => navigateTo('password-change')}>
+                  <Lock size={18} />
+                  <span>パスワード変更</span>
                 </button>
               </li>
             </>

@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { getEmployees, deleteEmployee } from '../db';
 import { fmt } from '../utils';
-import { UserPlus, Search, Edit2, Trash2 } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 
 export default function EmployeeList({ navigateTo }) {
   const [employees, setEmployees] = useState(() => getEmployees());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('すべて');
+  const [visiblePasswords, setVisiblePasswords] = useState({});
+
+  const togglePasswordVisibility = (id) => {
+    setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const handleDelete = (id, name) => {
     if (window.confirm(`従業員「${name}」を削除しますか？\n※関連する給与明細データもすべて削除されます。この操作は取り消せません。`)) {
@@ -94,6 +99,7 @@ export default function EmployeeList({ navigateTo }) {
                   <th>部署 / 雇用区分</th>
                   <th>入社日</th>
                   <th className="numeric">基本給</th>
+                  <th>パスワード</th>
                   <th style={{ textAlign: 'center' }}>ステータス</th>
                   <th style={{ textAlign: 'center' }}>操作</th>
                 </tr>
@@ -119,6 +125,21 @@ export default function EmployeeList({ navigateTo }) {
                     </td>
                     <td>{emp.hireDate || '-'}</td>
                     <td className="numeric" style={{ fontWeight: 500 }}>¥{fmt(emp.baseSalary)}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.9rem', fontFamily: visiblePasswords[emp.id] ? 'monospace' : 'inherit', letterSpacing: visiblePasswords[emp.id] ? '0px' : '2px' }}>
+                          {visiblePasswords[emp.id] ? (emp.password || '未設定') : '••••••••'}
+                        </span>
+                        <button
+                          type="button"
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}
+                          onClick={() => togglePasswordVisibility(emp.id)}
+                          title={visiblePasswords[emp.id] ? "非表示" : "表示"}
+                        >
+                          {visiblePasswords[emp.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className={`badge ${emp.status === '在籍中' ? 'badge-active' : 'badge-retired'}`}>
                         {emp.status}

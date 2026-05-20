@@ -9,6 +9,7 @@ import PayslipCreate from './components/PayslipCreate';
 import PayslipList from './components/PayslipList';
 import PayslipDetail from './components/PayslipDetail';
 import SystemSettings from './components/SystemSettings';
+import PasswordChange from './components/PasswordChange';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -66,8 +67,8 @@ export default function App() {
 
     // Role safety checks
     if (session && session.role !== 'admin') {
-      // Employees are ONLY allowed to see 'employee-payslips' and 'payslip-detail' (only if it belongs to them)
-      if (view !== 'employee-payslips' && view !== 'payslip-detail') {
+      // Employees are ONLY allowed to see 'employee-payslips', 'payslip-detail', and 'password-change'
+      if (view !== 'employee-payslips' && view !== 'payslip-detail' && view !== 'password-change') {
         setCurrentView('employee-payslips');
         return;
       }
@@ -154,6 +155,13 @@ export default function App() {
 
         {currentView === 'system-settings' && (
           <SystemSettings 
+            navigateTo={navigateTo} 
+          />
+        )}
+
+        {currentView === 'password-change' && (
+          <PasswordChange 
+            session={session}
             navigateTo={navigateTo} 
           />
         )}
