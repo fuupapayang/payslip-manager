@@ -10,6 +10,8 @@ import PayslipList from './components/PayslipList';
 import PayslipDetail from './components/PayslipDetail';
 import SystemSettings from './components/SystemSettings';
 import PasswordChange from './components/PasswordChange';
+import YearEndAdjustment from './components/YearEndAdjustment';
+import EmployeeProfile from './components/EmployeeProfile';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -20,7 +22,8 @@ export default function App() {
   const [params, setParams] = useState({
     employeeId: null,      // For editing employee
     payslipId: null,       // For viewing payslip detail
-    editingPayslipId: null // For editing/drafting a payslip
+    editingPayslipId: null, // For editing/drafting a payslip
+    targetEmployeeId: null // For year-end adjustment
   });
 
   // Seeding and session loading
@@ -55,7 +58,7 @@ export default function App() {
   const handleLogout = () => {
     setSession(null);
     setCurrentView('login');
-    setParams({ employeeId: null, payslipId: null, editingPayslipId: null });
+    setParams({ employeeId: null, payslipId: null, editingPayslipId: null, targetEmployeeId: null });
   };
 
   const navigateTo = (view, newParams = {}) => {
@@ -67,8 +70,8 @@ export default function App() {
 
     // Role safety checks
     if (session && session.role !== 'admin') {
-      // Employees are ONLY allowed to see 'employee-payslips', 'payslip-detail', and 'password-change'
-      if (view !== 'employee-payslips' && view !== 'payslip-detail' && view !== 'password-change') {
+      // Employees are ONLY allowed to see specific views
+      if (!['employee-payslips', 'payslip-detail', 'password-change', 'year-end-adjustment', 'employee-profile'].includes(view)) {
         setCurrentView('employee-payslips');
         return;
       }
@@ -164,6 +167,18 @@ export default function App() {
             session={session}
             navigateTo={navigateTo} 
           />
+        )}
+
+        {currentView === 'year-end-adjustment' && (
+          <YearEndAdjustment 
+            session={session}
+            navigateTo={navigateTo}
+            targetEmployeeId={params.targetEmployeeId}
+          />
+        )}
+
+        {currentView === 'employee-profile' && (
+          <EmployeeProfile session={session} />
         )}
       </main>
     </div>

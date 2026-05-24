@@ -1,6 +1,7 @@
 // 明治屋クリエイト - Database Layer (Firebase Firestore with LocalStorage Mock & Cache)
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDocs, getDoc, deleteDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 // Web Crypto SHA-256 Hashing helper
 export async function hashPassword(password) {
@@ -17,6 +18,7 @@ const KEY_EMPLOYEES = 'payslip_employees';
 const KEY_PAYSLIPS = 'payslip_payslips';
 const KEY_SESSION = 'payslip_session';
 const KEY_SETTINGS = 'payslip_settings';
+const KEY_YEAR_END = 'payslip_yearend';
 
 // Default system settings
 const DEFAULT_SETTINGS = {
@@ -34,12 +36,14 @@ const firebaseConfig = {
 };
 
 let db = null;
+let storage = null;
 let useFirebase = false;
 
 // Memory cache variables
 let cachedEmployees = [];
 let cachedPayslips = [];
 let cachedSettings = { ...DEFAULT_SETTINGS };
+let cachedYearEnd = [];
 
 // Check if configuration is valid and initialize Firebase
 const isConfigValid = firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && firebaseConfig.projectId.trim() !== "";
@@ -48,6 +52,7 @@ if (isConfigValid) {
     const apps = getApps();
     const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
     db = getFirestore(app);
+    storage = getStorage(app);
     useFirebase = true;
     console.log("Firebase initialized successfully with project ID:", firebaseConfig.projectId);
   } catch (e) {
@@ -103,6 +108,13 @@ export async function seedDatabase() {
       if (settingsDoc.exists()) {
         loadedSettings = settingsDoc.data();
       }
+
+      // 4. Fetch year-end adjustments
+      const yeSnap = await getDocs(collection(db, "yearEndAdjustments"));
+      const yeList = [];
+      yeSnap.forEach(d => {
+        yeList.push(d.data());
+      });
 
       // If Firebase Firestore has zero employees, seed initial default datasets
       if (employeesList.length === 0) {
@@ -334,15 +346,18 @@ export async function seedDatabase() {
         cachedEmployees = seededEmployees;
         cachedPayslips = seededSlips;
         cachedSettings = DEFAULT_SETTINGS;
+        cachedYearEnd = [];
       } else {
         cachedEmployees = employeesList;
         cachedPayslips = payslipsList;
         cachedSettings = loadedSettings;
+        cachedYearEnd = yeList;
       }
 
       // Sync to localstorage to ensure offline compatibility
       writeData(KEY_EMPLOYEES, cachedEmployees);
       writeData(KEY_PAYSLIPS, cachedPayslips);
+      writeData(KEY_YEAR_END, cachedYearEnd);
       localStorage.setItem(KEY_SETTINGS, JSON.stringify(cachedSettings));
       
       console.log("Memory database loaded from Cloud Firestore successfully.");
@@ -356,6 +371,7 @@ export async function seedDatabase() {
   // LocalStorage Fallback logic
   let employees = readData(KEY_EMPLOYEES);
   let payslips = readData(KEY_PAYSLIPS);
+  let yearEnd = readData(KEY_YEAR_END);
   let settings = DEFAULT_SETTINGS;
   try {
     const val = localStorage.getItem(KEY_SETTINGS);
@@ -384,6 +400,15 @@ export async function seedDatabase() {
       }
       if (!('dependentsCount' in emp)) {
         emp.dependentsCount = 0;
+        changed = true;
+      }
+      if (!('address' in emp)) {
+        emp.address = '';
+        emp.myNumber = '';
+        emp.hasSpouse = '無';
+        emp.birthDate = '';
+        emp.familyInfo = '';
+        emp.familyMembers = [];
         changed = true;
       }
       if (changed) {
@@ -427,7 +452,13 @@ export async function seedDatabase() {
         branchName: '',
         accountType: '普通',
         accountNumber: '',
-        status: '在籍中'
+        status: '在籍中',
+        address: '',
+        myNumber: '',
+        hasSpouse: '無',
+        birthDate: '',
+        familyInfo: '',
+        familyMembers: []
       },
       {
         id: 'EMP001',
@@ -456,7 +487,13 @@ export async function seedDatabase() {
         branchName: '渋谷支店',
         accountType: '普通',
         accountNumber: '1234567',
-        status: '在籍中'
+        status: '在籍中',
+        address: '東京都渋谷区道玄坂1-2-3',
+        myNumber: '123456789012',
+        hasSpouse: '無',
+        birthDate: '1990-05-15',
+        familyInfo: '',
+        familyMembers: []
       },
       {
         id: 'EMP002',
@@ -485,7 +522,13 @@ export async function seedDatabase() {
         branchName: '新宿支店',
         accountType: '普通',
         accountNumber: '7654321',
-        status: '在籍中'
+        status: '在籍中',
+        address: '東京都新宿区西新宿2-8-1',
+        myNumber: '987654321098',
+        hasSpouse: '有',
+        birthDate: '1985-11-20',
+        familyInfo: '配偶者あり、扶養家族1名（子）',
+        familyMembers: []
       },
       {
         id: 'EMP003',
@@ -524,6 +567,7 @@ export async function seedDatabase() {
   cachedEmployees = employees;
   cachedPayslips = payslips;
   cachedSettings = settings;
+  cachedYearEnd = yearEnd;
   console.log("Memory database loaded from LocalStorage fallback.");
 }
 
@@ -725,9 +769,29 @@ export function isDuplicatePayslip(employeeId, targetYearMonth, editingSlipId = 
   return cachedPayslips.some(ps => ps.id === expectedId);
 }
 
-// --- Settings API ---
+// -- System Settings --
 export function getSettings() {
   return cachedSettings;
+}
+
+// -- Image Upload Helper --
+export async function uploadImage(employeeId, base64Data) {
+  if (useFirebase && storage) {
+    try {
+      const fileName = `yearend/${employeeId}/${Date.now()}.jpg`;
+      const storageRef = ref(storage, fileName);
+      const snapshot = await uploadString(storageRef, base64Data, 'data_url');
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (e) {
+      console.error("Firebase Storage upload failed, falling back to Base64:", e);
+      return base64Data; // Fallback to storing raw base64 if upload fails
+    }
+  } else {
+    // If not using Firebase, we must rely on Base64 directly. 
+    // We assume the caller has already compressed it significantly.
+    return base64Data;
+  }
 }
 
 export function saveSettings(settings) {
@@ -745,3 +809,60 @@ export function saveSettings(settings) {
     });
   }
 }
+
+// --- Year-End Adjustment API ---
+export function getYearEndAdjustments(employeeId = null, role = 'admin') {
+  if (role === 'admin') {
+    if (employeeId) {
+      return cachedYearEnd.filter(y => y.employeeId === employeeId);
+    }
+    return cachedYearEnd;
+  } else {
+    return cachedYearEnd.filter(y => y.employeeId === employeeId);
+  }
+}
+
+export function getYearEndAdjustment(id, currentUserId = null, role = 'admin') {
+  const ye = cachedYearEnd.find(y => y.id === id);
+  if (!ye) return null;
+
+  if (role !== 'admin' && ye.employeeId !== currentUserId) {
+    return null;
+  }
+  return { ...ye };
+}
+
+export function saveYearEndAdjustment(data) {
+  if (!data.id) {
+    data.id = 'YE_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+  
+  const idx = cachedYearEnd.findIndex(y => y.id === data.id);
+  if (idx > -1) {
+    cachedYearEnd[idx] = { ...cachedYearEnd[idx], ...data };
+  } else {
+    cachedYearEnd.push(data);
+  }
+
+  writeData(KEY_YEAR_END, cachedYearEnd);
+
+  if (useFirebase && db) {
+    setDoc(doc(db, "yearEndAdjustments", data.id), data).catch(err => {
+      console.error("Failed to sync YearEndAdjustment save to Firestore:", err);
+    });
+  }
+  
+  return data.id;
+}
+
+export function deleteYearEndAdjustment(id) {
+  cachedYearEnd = cachedYearEnd.filter(y => y.id !== id);
+  writeData(KEY_YEAR_END, cachedYearEnd);
+
+  if (useFirebase && db) {
+    deleteDoc(doc(db, "yearEndAdjustments", id)).catch(err => {
+      console.error("Failed to delete YearEndAdjustment from Firestore:", err);
+    });
+  }
+}
+

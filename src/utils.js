@@ -52,16 +52,19 @@ export function calcEarningsTotal(slip) {
 
 export function calcDeductionsTotal(slip) {
   if (!slip) return 0;
-  return (
-    parseNum(slip.healthInsurance) +
-    parseNum(slip.careInsurance) +
-    parseNum(slip.welfarePension) +
-    parseNum(slip.employmentInsurance) +
-    parseNum(slip.contribution) +
-    parseNum(slip.incomeTax) +
-    parseNum(slip.residentTax) +
-    parseNum(slip.otherDeduction)
-  );
+  const health = parseNum(slip.healthInsurance) || 0;
+  const care = parseNum(slip.careInsurance) || 0;
+  const welfare = parseNum(slip.welfarePension) || 0;
+  const empIns = parseNum(slip.employmentInsurance) || 0;
+  const incomeTax = parseNum(slip.incomeTax) || 0;
+  const residentTax = parseNum(slip.residentTax) || 0;
+  const contribution = parseNum(slip.contribution) || 0;
+  const other = parseNum(slip.otherDeduction) || 0;
+  
+  // 年末調整過不足税額 (YEA Adjustment). Positive = deduction (追加徴収), Negative = refund (還付)
+  const yea = parseNum(slip.yearEndTaxAdjustment) || 0;
+
+  return health + care + welfare + empIns + incomeTax + residentTax + contribution + other + yea;
 }
 
 export function calcNetPayout(slip) {
@@ -88,6 +91,121 @@ function getBaseTax(baseArray, dependentsCount) {
   } else {
     return Math.max(0, baseArray[7] - 1610 * (dep - 7));
   }
+}
+
+// --- Year-End Adjustment Auto-Calculation Engine ---
+export function calculateYearEndAdjustment(employeeId, targetYear, allPayslips, yearEndData) {
+  // 1. Gather all payslips for this employee in the target year
+  const empPayslips = allPayslips.filter(p => p.employeeId === employeeId && p.targetYearMonth.startsWith(String(targetYear)));
+  
+  if (empPayslips.length === 0) {
+    return { grossRevenue: 0, withheldTax: 0, finalTax: 0, difference: 0 };
+  }
+
+  // 2. Sum up totals
+  let grossRevenue = 0;
+  let withheldTax = 0;
+  let socialInsurancePaid = 0;
+
+  empPayslips.forEach(slip => {
+    grossRevenue += calcTaxableEarningsTotal(slip);
+    withheldTax += parseNum(slip.incomeTax);
+    socialInsurancePaid += calcSocialInsuranceTotal(slip);
+  });
+
+  // 3. Salary Income Deduction (給与所得控除)
+  let salaryIncomeDeduction = 0;
+  if (grossRevenue <= 1625000) salaryIncomeDeduction = 550000;
+  else if (grossRevenue <= 1800000) salaryIncomeDeduction = grossRevenue * 0.4 - 100000;
+  else if (grossRevenue <= 3600000) salaryIncomeDeduction = grossRevenue * 0.3 + 80000;
+  else if (grossRevenue <= 6600000) salaryIncomeDeduction = grossRevenue * 0.2 + 440000;
+  else if (grossRevenue <= 8500000) salaryIncomeDeduction = grossRevenue * 0.1 + 1100000;
+  else salaryIncomeDeduction = 1950000;
+
+  let totalIncome = Math.max(0, grossRevenue - salaryIncomeDeduction);
+
+  // 4. Calculate Other Deductions (所得控除)
+  let totalDeductions = socialInsurancePaid; // Social Insurance Deducted from Payslips
+
+  // Add mutual enterprise/iDeCo from YEA
+  if (yearEndData?.insuranceDeclaration?.smallEnterpriseMutual) {
+    totalDeductions += parseNum(yearEndData.insuranceDeclaration.smallEnterpriseMutual);
+  }
+
+  // Basic Deduction (基礎控除) - Max 480k, decreases if income > 24M (ignoring high earner edge case for now)
+  totalDeductions += 480000;
+
+  if (yearEndData?.dependentDeclaration) {
+    const dep = yearEndData.dependentDeclaration;
+    
+    // Spouse Deduction (配偶者控除) - Max 380k
+    if (dep.spouse?.name) {
+      totalDeductions += 380000;
+    }
+    
+    // Dependents Deduction (扶養控除) - 380k per person (ignoring age specific bumps for simplicity)
+    const numDeps = (dep.dependents || []).length;
+    totalDeductions += (numDeps * 380000);
+
+    // Disability/Single Parent (障害者・ひとり親・寡婦等) - Typically 270k
+    if (dep.disabilityType && dep.disabilityType !== 'none') totalDeductions += 270000;
+    if (dep.singleParent || dep.widow) totalDeductions += 270000;
+  }
+
+  // Life Insurance / Earthquake (simplified)
+  if (yearEndData?.insuranceDeclaration) {
+    const ins = yearEndData.insuranceDeclaration;
+    
+    let lifeInsAmount = 0;
+    (ins.lifeInsurance || []).forEach(i => lifeInsAmount += parseNum(i.amount));
+    if (lifeInsAmount > 0) {
+      // Simplified life insurance deduction (Max 120k total for all categories, simplified to max 40k per category)
+      let lifeDeduct = 0;
+      if (lifeInsAmount <= 20000) lifeDeduct = lifeInsAmount;
+      else if (lifeInsAmount <= 40000) lifeDeduct = (lifeInsAmount * 0.5) + 10000;
+      else if (lifeInsAmount <= 80000) lifeDeduct = (lifeInsAmount * 0.25) + 20000;
+      else lifeDeduct = 40000; // Assuming only 'general' for now.
+      totalDeductions += lifeDeduct;
+    }
+
+    let eqInsAmount = 0;
+    (ins.earthquakeInsurance || []).forEach(i => eqInsAmount += parseNum(i.amount));
+    if (eqInsAmount > 0) {
+      // Simplified earthquake insurance deduction (Max 50k)
+      totalDeductions += Math.min(50000, eqInsAmount);
+    }
+  }
+
+  // 5. Taxable Net Income (課税所得金額) - rounded down to nearest 1,000 yen
+  let taxableNetIncome = Math.max(0, totalIncome - totalDeductions);
+  taxableNetIncome = Math.floor(taxableNetIncome / 1000) * 1000;
+
+  // 6. Calculate Standard Income Tax (算出所得税額)
+  let standardTax = 0;
+  if (taxableNetIncome <= 1949000) standardTax = taxableNetIncome * 0.05;
+  else if (taxableNetIncome <= 3299000) standardTax = taxableNetIncome * 0.10 - 97500;
+  else if (taxableNetIncome <= 6949000) standardTax = taxableNetIncome * 0.20 - 427500;
+  else if (taxableNetIncome <= 8999000) standardTax = taxableNetIncome * 0.23 - 636000;
+  else if (taxableNetIncome <= 17999000) standardTax = taxableNetIncome * 0.33 - 1536000;
+  else if (taxableNetIncome <= 39999000) standardTax = taxableNetIncome * 0.40 - 2796000;
+  else standardTax = taxableNetIncome * 0.45 - 4796000;
+
+  // 7. Calculate Final Annual Tax (年調年税額) including 復興特別所得税 (2.1%)
+  let finalTax = Math.floor(standardTax * 1.021);
+  // Round down to nearest 100 yen
+  finalTax = Math.floor(finalTax / 100) * 100;
+
+  // 8. Difference (過不足額) = Withheld - Final
+  // Positive means refund (還付), Negative means additional charge (追加徴収)
+  const difference = withheldTax - finalTax;
+
+  return {
+    grossRevenue,
+    withheldTax,
+    finalTax,
+    difference,
+    taxableNetIncome
+  };
 }
 
 // Calculate Social Insurance Deductions total

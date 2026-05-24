@@ -6,7 +6,9 @@ import {
   FilePlus, 
   LogOut, 
   Lock,
-  Settings 
+  Settings,
+  FileText,
+  UserCircle
 } from 'lucide-react';
 
 export default function Sidebar({ session, currentView, navigateTo, onLogout }) {
@@ -49,6 +51,12 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
                   <span>給与明細作成</span>
                 </button>
               </li>
+              <li className={`sidebar-item ${currentView === 'year-end-adjustment' ? 'active' : ''}`}>
+                <button onClick={() => navigateTo('year-end-adjustment')}>
+                  <FileText size={18} />
+                  <span>年末調整</span>
+                </button>
+              </li>
               <li className={`sidebar-item ${currentView === 'system-settings' ? 'active' : ''}`}>
                 <button onClick={() => navigateTo('system-settings')}>
                   <Settings size={18} />
@@ -68,6 +76,18 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
                 <button onClick={() => navigateTo('employee-payslips')}>
                   <FileSpreadsheet size={18} />
                   <span>給与明細一覧</span>
+                </button>
+              </li>
+              <li className={`sidebar-item ${currentView === 'year-end-adjustment' ? 'active' : ''}`}>
+                <button onClick={() => navigateTo('year-end-adjustment')}>
+                  <FileText size={18} />
+                  <span>年末調整</span>
+                </button>
+              </li>
+              <li className={`sidebar-item ${currentView === 'employee-profile' ? 'active' : ''}`}>
+                <button onClick={() => navigateTo('employee-profile')}>
+                  <UserCircle size={18} />
+                  <span>基本情報</span>
                 </button>
               </li>
               <li className={`sidebar-item ${currentView === 'password-change' ? 'active' : ''}`}>
