@@ -3,7 +3,7 @@ import { getEmployee, getEmployees, saveEmployee } from '../db';
 import { validateEmployee, parseNum } from '../utils';
 import { ArrowLeft, Save, ShieldAlert, Plus, Trash2 } from 'lucide-react';
 
-export default function EmployeeEdit({ employeeId, navigateTo }) {
+export default function EmployeeEdit({ employeeId, navigateTo, session }) {
   const isEdit = !!employeeId;
   const allEmployees = getEmployees();
 
@@ -310,6 +310,24 @@ export default function EmployeeEdit({ employeeId, navigateTo }) {
                 <option value="アルバイト">アルバイト</option>
               </select>
             </div>
+
+            {session && session.role === 'admin' && (
+              <div className="form-group">
+                <label htmlFor="role">権限</label>
+                <select
+                  id="role"
+                  name="role"
+                  className="form-control"
+                  value={formData.role}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                >
+                  <option value="employee">従業員</option>
+                  <option value="manager">マネージャ</option>
+                  <option value="admin">管理者</option>
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="hireDate">入社日</label>

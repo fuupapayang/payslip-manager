@@ -285,6 +285,17 @@ export default function PayslipDetail({ payslipId, navigateTo, session }) {
                     <td style={{ color: 'transparent' }}>-</td>
                   </tr>
                 )}
+                {slip.differenceAdjustment > 0 ? (
+                  <tr>
+                    <td>差額調整費</td>
+                    <td className="amount deduction-color">¥{fmt(slip.differenceAdjustment)}</td>
+                  </tr>
+                ) : (
+                  <tr>
+                    <td style={{ color: 'transparent' }}>-</td>
+                    <td style={{ color: 'transparent' }}>-</td>
+                  </tr>
+                )}
                 
                 <tr className="payslip-summary-row">
                   <td>控除合計</td>

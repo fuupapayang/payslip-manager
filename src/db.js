@@ -119,7 +119,16 @@ export async function seedDatabase() {
       // If Firebase Firestore has zero employees, seed initial default datasets
       if (employeesList.length === 0) {
         console.log("Firestore is empty. Seeding initial data package to the cloud...");
-        const seededEmployees = [
+        
+        // 1. Try to load from LocalStorage to migrate user's current local data
+        let seededEmployees = readData(KEY_EMPLOYEES, []);
+        let seededSlips = readData(KEY_PAYSLIPS, []);
+        let seededYearEnd = readData(KEY_YEAR_END, []);
+        let currentSettings = readData(KEY_SETTINGS, DEFAULT_SETTINGS);
+
+        // 2. If LocalStorage is also empty, use default mock data
+        if (seededEmployees.length === 0) {
+          seededEmployees = [
           {
             id: 'admin',
             name: '管理者 太郎',
@@ -237,8 +246,10 @@ export async function seedDatabase() {
             status: '在籍中'
           }
         ];
-
-        const seededSlips = [
+        } // Close if (seededEmployees.length === 0)
+        
+        if (seededSlips.length === 0) {
+          seededSlips = [
           {
             id: 'EMP001-2026-04',
             employeeId: 'EMP001',
@@ -333,20 +344,27 @@ export async function seedDatabase() {
             otherDeduction: 0
           }
         ];
+        }
 
-        // Seeding Firestore asynchronously
+        // Upload to Firestore asynchronously
         for (const emp of seededEmployees) {
           await setDoc(doc(db, "employees", emp.id), emp);
         }
         for (const ps of seededSlips) {
           await setDoc(doc(db, "payslips", ps.id), ps);
         }
-        await setDoc(doc(db, "settings", "system"), DEFAULT_SETTINGS);
+        // Set settings
+        await setDoc(doc(db, "settings", "system"), currentSettings);
+        cachedSettings = { ...currentSettings };
 
+        // Upload Year-End Adjustments
+        for (const ye of seededYearEnd) {
+          await setDoc(doc(db, "yearEndAdjustments", ye.id), ye);
+          cachedYearEnd.push(ye);
+        }
         cachedEmployees = seededEmployees;
         cachedPayslips = seededSlips;
-        cachedSettings = DEFAULT_SETTINGS;
-        cachedYearEnd = [];
+        console.log("Database seeded successfully.");
       } else {
         cachedEmployees = employeesList;
         cachedPayslips = payslipsList;

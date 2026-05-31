@@ -15,6 +15,7 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
   if (!session) return null;
 
   const isAdmin = session.role === 'admin';
+  const isManager = session.role === 'manager';
 
   return (
     <aside className="sidebar print-hide">
@@ -25,7 +26,7 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
 
       <nav style={{ flex: 1 }}>
         <ul className="sidebar-menu">
-          {isAdmin ? (
+          {(isAdmin || isManager) ? (
             <>
               <li className={`sidebar-item ${currentView === 'admin-dashboard' ? 'active' : ''}`}>
                 <button onClick={() => navigateTo('admin-dashboard')}>
@@ -45,24 +46,28 @@ export default function Sidebar({ session, currentView, navigateTo, onLogout }) 
                   <span>給与明細一覧</span>
                 </button>
               </li>
-              <li className={`sidebar-item ${currentView === 'payslip-create' ? 'active' : ''}`}>
-                <button onClick={() => navigateTo('payslip-create')}>
-                  <FilePlus size={18} />
-                  <span>給与明細作成</span>
-                </button>
-              </li>
+              {isAdmin && (
+                <li className={`sidebar-item ${currentView === 'payslip-create' ? 'active' : ''}`}>
+                  <button onClick={() => navigateTo('payslip-create')}>
+                    <FilePlus size={18} />
+                    <span>給与明細作成</span>
+                  </button>
+                </li>
+              )}
               <li className={`sidebar-item ${currentView === 'year-end-adjustment' ? 'active' : ''}`}>
                 <button onClick={() => navigateTo('year-end-adjustment')}>
                   <FileText size={18} />
                   <span>年末調整</span>
                 </button>
               </li>
-              <li className={`sidebar-item ${currentView === 'system-settings' ? 'active' : ''}`}>
-                <button onClick={() => navigateTo('system-settings')}>
-                  <Settings size={18} />
-                  <span>システム設定</span>
-                </button>
-              </li>
+              {isAdmin && (
+                <li className={`sidebar-item ${currentView === 'system-settings' ? 'active' : ''}`}>
+                  <button onClick={() => navigateTo('system-settings')}>
+                    <Settings size={18} />
+                    <span>システム設定</span>
+                  </button>
+                </li>
+              )}
               <li className={`sidebar-item ${currentView === 'password-change' ? 'active' : ''}`}>
                 <button onClick={() => navigateTo('password-change')}>
                   <Lock size={18} />

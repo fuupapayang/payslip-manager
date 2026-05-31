@@ -7,7 +7,8 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function YearEndAdjustment({ session, navigateTo, targetEmployeeId = null }) {
   const isAdmin = session.role === 'admin';
-  const isListView = isAdmin && !targetEmployeeId;
+  const isManager = session.role === 'manager';
+  const isListView = (isAdmin || isManager) && !targetEmployeeId;
   const currentYear = new Date().getFullYear();
   
   const [targetYear, setTargetYear] = useState(currentYear);
@@ -317,7 +318,7 @@ export default function YearEndAdjustment({ session, navigateTo, targetEmployeeI
         <div className="page-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ padding: '8px', display: 'flex', alignItems: 'center' }}><FileText size={24} style={{ color: 'var(--primary-navy)' }} /></div>
-            <h1 className="page-title">年末調整 管理 ({targetYear}年)</h1>
+            <h1 className="page-title">年末調整 管理 ({targetYear}年) {isManager && <span style={{fontSize: '0.8rem', backgroundColor: '#e2e8f0', padding: '4px 8px', borderRadius: '4px', verticalAlign: 'middle'}}>閲覧専用</span>}</h1>
           </div>
         </div>
         <div className="card">
@@ -368,12 +369,14 @@ export default function YearEndAdjustment({ session, navigateTo, targetEmployeeI
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {isAdmin && <button className="btn btn-secondary btn-sm" onClick={() => navigateTo('year-end-adjustment')} style={{ padding: '8px' }}><ArrowLeft size={16} /></button>}
-          <h1 className="page-title">年末調整申告 ({targetYear}年)</h1>
+          {(isAdmin || isManager) && <button className="btn btn-secondary btn-sm" onClick={() => navigateTo('year-end-adjustment')} style={{ padding: '8px' }}><ArrowLeft size={16} /></button>}
+          <h1 className="page-title">年末調整申告 ({targetYear}年) {isManager && <span style={{fontSize: '0.8rem', backgroundColor: '#e2e8f0', padding: '4px 8px', borderRadius: '4px', verticalAlign: 'middle'}}>閲覧専用</span>}</h1>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={handleCopyFromPreviousYear} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Copy size={16} /> 前年のデータをコピー
-        </button>
+        {!isManager && (
+          <button className="btn btn-secondary btn-sm" onClick={handleCopyFromPreviousYear} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Copy size={16} /> 前年のデータをコピー
+          </button>
+        )}
       </div>
 
       <div className="card">
@@ -620,14 +623,18 @@ export default function YearEndAdjustment({ session, navigateTo, targetEmployeeI
                   {(ins.images || []).map((imgUrl, idx) => (
                     <div key={idx} style={{ position: 'relative', width: '100px', height: '100px', border: '1px solid #e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                       <img src={imgUrl} alt={`証明書 ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button type="button" onClick={() => removeImage(idx)} style={{ position: 'absolute', top: '4px', right: '4px', backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>×</button>
+                      {!isManager && (
+                        <button type="button" onClick={() => removeImage(idx)} style={{ position: 'absolute', top: '4px', right: '4px', backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>×</button>
+                      )}
                     </div>
                   ))}
                 </div>
-                <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <Camera size={16} /> カメラで撮影 / 画像を選択
-                  <input type="file" accept="image/*" capture="environment" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
-                </label>
+                {!isManager && (
+                  <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <Camera size={16} /> カメラで撮影 / 画像を選択
+                    <input type="file" accept="image/*" capture="environment" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
+                  </label>
+                )}
               </div>
 
               {ins._legacyText && (
@@ -639,14 +646,16 @@ export default function YearEndAdjustment({ session, navigateTo, targetEmployeeI
 
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', marginTop: '30px', marginBottom: '40px' }}>
-        <button className="btn btn-secondary" onClick={() => handleSave('draft')} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'var(--status-draft-text)', color: 'var(--status-draft-text)' }}>
-          <Save size={18} /><span>一時保存（下書き）</span>
-        </button>
-        <button className="btn btn-primary" onClick={() => handleSave('submitted')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Send size={18} /><span>提出する（確定）</span>
-        </button>
-      </div>
+      {!isManager && (
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', marginTop: '30px', marginBottom: '40px' }}>
+          <button className="btn btn-secondary" onClick={() => handleSave('draft')} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: 'var(--status-draft-text)', color: 'var(--status-draft-text)' }}>
+            <Save size={18} /><span>一時保存（下書き）</span>
+          </button>
+          <button className="btn btn-primary" onClick={() => handleSave('submitted')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Send size={18} /><span>提出する（確定）</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

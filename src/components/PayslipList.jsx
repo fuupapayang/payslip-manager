@@ -46,7 +46,7 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
           {employeeMode ? '給与明細一覧' : '給与明細管理'}
         </h1>
         
-        {!employeeMode && (
+        {!employeeMode && session.role === 'admin' && (
           <button 
             className="btn btn-primary"
             onClick={() => navigateTo('payslip-create', { editingPayslipId: null })}
@@ -178,7 +178,7 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
                             <span>詳細</span>
                           </button>
                           
-                          {!employeeMode && (
+                          {!employeeMode && session.role === 'admin' && (
                             <>
                               <button 
                                 className="btn btn-secondary btn-sm"

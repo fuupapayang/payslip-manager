@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getEmployees, deleteEmployee } from '../db';
 import { fmt } from '../utils';
-import { UserPlus, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Eye, EyeOff, Mail } from 'lucide-react';
 
 export default function EmployeeList({ navigateTo }) {
   const [employees, setEmployees] = useState(() => getEmployees());
@@ -17,6 +17,19 @@ export default function EmployeeList({ navigateTo }) {
     if (window.confirm(`従業員「${name}」を削除しますか？\n※関連する給与明細データもすべて削除されます。この操作は取り消せません。`)) {
       deleteEmployee(id);
       setEmployees(getEmployees()); // Refresh state
+    }
+  };
+
+  const handleMassEmail = () => {
+    const emails = employees
+      .map(emp => emp.email)
+      .filter(email => email && email.includes('@'))
+      .join(',');
+      
+    if (emails) {
+      window.location.href = `mailto:?bcc=${emails}`;
+    } else {
+      alert('有効なメールアドレスが登録されていません。');
     }
   };
 
@@ -39,13 +52,22 @@ export default function EmployeeList({ navigateTo }) {
     <div>
       <div className="page-header">
         <h1 className="page-title">従業員一覧</h1>
-        <button 
-          className="btn btn-primary"
-          onClick={() => navigateTo('employee-edit', { employeeId: null })}
-        >
-          <UserPlus size={18} />
-          <span>新規従業員登録</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className="btn btn-secondary"
+            onClick={handleMassEmail}
+          >
+            <Mail size={18} />
+            <span>一斉メール送信</span>
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => navigateTo('employee-edit', { employeeId: null })}
+          >
+            <UserPlus size={18} />
+            <span>新規従業員登録</span>
+          </button>
+        </div>
       </div>
 
       <div className="card">

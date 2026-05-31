@@ -60,11 +60,12 @@ export function calcDeductionsTotal(slip) {
   const residentTax = parseNum(slip.residentTax) || 0;
   const contribution = parseNum(slip.contribution) || 0;
   const other = parseNum(slip.otherDeduction) || 0;
+  const diffAdj = parseNum(slip.differenceAdjustment) || 0;
   
   // 年末調整過不足税額 (YEA Adjustment). Positive = deduction (追加徴収), Negative = refund (還付)
   const yea = parseNum(slip.yearEndTaxAdjustment) || 0;
 
-  return health + care + welfare + empIns + incomeTax + residentTax + contribution + other + yea;
+  return health + care + welfare + empIns + incomeTax + residentTax + contribution + other + diffAdj + yea;
 }
 
 export function calcNetPayout(slip) {

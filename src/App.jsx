@@ -34,7 +34,7 @@ export default function App() {
       const activeSession = getCurrentSession();
       if (activeSession) {
         setSession(activeSession);
-        if (activeSession.role === 'admin') {
+        if (activeSession.role === 'admin' || activeSession.role === 'manager') {
           setCurrentView('admin-dashboard');
         } else {
           setCurrentView('employee-payslips');
@@ -48,7 +48,7 @@ export default function App() {
 
   const handleLoginSuccess = (userSession) => {
     setSession(userSession);
-    if (userSession.role === 'admin') {
+    if (userSession.role === 'admin' || userSession.role === 'manager') {
       setCurrentView('admin-dashboard');
     } else {
       setCurrentView('employee-payslips');
@@ -69,10 +69,23 @@ export default function App() {
     }
 
     // Role safety checks
-    if (session && session.role !== 'admin') {
+    if (session && session.role !== 'admin' && session.role !== 'manager') {
       // Employees are ONLY allowed to see specific views
       if (!['employee-payslips', 'payslip-detail', 'password-change', 'year-end-adjustment', 'employee-profile'].includes(view)) {
         setCurrentView('employee-payslips');
+        return;
+      }
+    }
+
+    // Manager role restrictions
+    if (session && session.role === 'manager') {
+      const managerAllowedViews = [
+        'admin-dashboard', 'employee-list', 'employee-edit', 
+        'payslip-list', 'payslip-detail', 'password-change', 
+        'year-end-adjustment', 'employee-profile'
+      ];
+      if (!managerAllowedViews.includes(view)) {
+        setCurrentView('admin-dashboard');
         return;
       }
     }
@@ -123,6 +136,7 @@ export default function App() {
           <EmployeeEdit 
             employeeId={params.employeeId} 
             navigateTo={navigateTo} 
+            session={session}
           />
         )}
         

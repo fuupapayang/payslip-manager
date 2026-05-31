@@ -128,14 +128,15 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
         contribution: emp.fixedContribution || 0,
         incomeTax: 0,
         residentTax: emp.fixedResidentTax || 0,
-        otherDeduction: 0
+        otherDeduction: 0,
+        differenceAdjustment: 0
       };
 
       if (prevSlip) {
         // Copy variable values from prev slip
         ['workDays', 'absenceDays', 'paidLeaveDays', 'overtimeHours', 'midnightHours', 'holidayWorkDays',
          'baseSalary', 'titleAllowance', 'commuteAllowance', 'overtimeAllowance', 'midnightAllowance', 'holidayAllowance', 'otherAllowance',
-         'healthInsurance', 'careInsurance', 'welfarePension', 'employmentInsurance', 'contribution', 'residentTax', 'otherDeduction'].forEach(key => {
+         'healthInsurance', 'careInsurance', 'welfarePension', 'employmentInsurance', 'contribution', 'residentTax', 'otherDeduction', 'differenceAdjustment'].forEach(key => {
            if (prevSlip[key] !== undefined) newSlip[key] = prevSlip[key];
          });
       }
@@ -231,7 +232,7 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
     dependentsCount: 0,
     workDays: 20, absenceDays: 0, paidLeaveDays: 0, overtimeHours: 0, midnightHours: 0, holidayWorkDays: 0,
     baseSalary: 0, titleAllowance: 0, commuteAllowance: 0, overtimeAllowance: 0, midnightAllowance: 0, holidayAllowance: 0, otherAllowance: 0,
-    healthInsurance: 0, careInsurance: 0, welfarePension: 0, employmentInsurance: 0, contribution: 0, incomeTax: 0, residentTax: 0, otherDeduction: 0,
+    healthInsurance: 0, careInsurance: 0, welfarePension: 0, employmentInsurance: 0, contribution: 0, incomeTax: 0, residentTax: 0, otherDeduction: 0, differenceAdjustment: 0,
     yearEndTaxAdjustment: 0
   };
 
@@ -587,6 +588,10 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
             <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center' }}>
               <label htmlFor="otherDeduction">その他控除</label>
               <input id="otherDeduction" name="otherDeduction" type="number" min="0" className="form-control numeric" value={formData.otherDeduction} onChange={handleNumericChange} disabled={isSubmitting} />
+            </div>
+            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center' }}>
+              <label htmlFor="differenceAdjustment">差額調整費</label>
+              <input id="differenceAdjustment" name="differenceAdjustment" type="number" min="0" className="form-control numeric" value={formData.differenceAdjustment} onChange={handleNumericChange} disabled={isSubmitting} />
             </div>
             
             {formData.targetYearMonth?.endsWith('-12') && (
