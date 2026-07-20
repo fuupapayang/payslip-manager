@@ -249,32 +249,59 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
       const slip = getPayslip(editingPayslipId);
       if (slip) {
         const emp = getEmployee(slip.employeeId);
-        // If it's a draft, use the latest fixed settings from the employee master data
+        // If it's a draft, check if master data differs and ask user
         const isDraft = slip.status === 'draft';
-        const taxCategory = (isDraft && emp && emp.taxCategory) ? emp.taxCategory : (slip.taxCategory || 'ko');
-        const dependentsCount = (isDraft && emp && emp.dependentsCount !== undefined) ? emp.dependentsCount : (slip.dependentsCount || 0);
-        
         const updatedFields = {};
+        let shouldUpdate = false;
+        
         if (isDraft && emp) {
-          if (emp.baseSalary !== undefined) updatedFields.baseSalary = emp.baseSalary;
-          if (emp.titleAllowance !== undefined) updatedFields.titleAllowance = emp.titleAllowance;
-          if (emp.commuteAllowance !== undefined) updatedFields.commuteAllowance = emp.commuteAllowance;
-          if (emp.otherFixedAllowance !== undefined) updatedFields.otherAllowance = emp.otherFixedAllowance;
-          if (emp.fixedHealthInsurance !== undefined) updatedFields.healthInsurance = emp.fixedHealthInsurance || 0;
-          if (emp.fixedCareInsurance !== undefined) updatedFields.careInsurance = emp.fixedCareInsurance || 0;
-          if (emp.fixedWelfarePension !== undefined) updatedFields.welfarePension = emp.fixedWelfarePension || 0;
-          if (emp.fixedLaborInsurance !== undefined) updatedFields.employmentInsurance = emp.fixedLaborInsurance || 0;
-          if (emp.fixedContribution !== undefined) updatedFields.contribution = emp.fixedContribution || 0;
-          if (emp.fixedResidentTax !== undefined) updatedFields.residentTax = emp.fixedResidentTax || 0;
+          const hasChanges = 
+            (emp.baseSalary !== undefined && Number(emp.baseSalary) !== Number(slip.baseSalary)) ||
+            (emp.titleAllowance !== undefined && Number(emp.titleAllowance) !== Number(slip.titleAllowance)) ||
+            (emp.commuteAllowance !== undefined && Number(emp.commuteAllowance) !== Number(slip.commuteAllowance)) ||
+            (emp.otherFixedAllowance !== undefined && Number(emp.otherFixedAllowance) !== Number(slip.otherAllowance)) ||
+            (Number(emp.fixedHealthInsurance || 0) !== Number(slip.healthInsurance || 0)) ||
+            (Number(emp.fixedCareInsurance || 0) !== Number(slip.careInsurance || 0)) ||
+            (Number(emp.fixedWelfarePension || 0) !== Number(slip.welfarePension || 0)) ||
+            (Number(emp.fixedLaborInsurance || 0) !== Number(slip.employmentInsurance || 0)) ||
+            (Number(emp.fixedContribution || 0) !== Number(slip.contribution || 0)) ||
+            (Number(emp.fixedResidentTax || 0) !== Number(slip.residentTax || 0)) ||
+            (emp.taxCategory !== slip.taxCategory && emp.taxCategory !== undefined) ||
+            (emp.dependentsCount !== slip.dependentsCount && emp.dependentsCount !== undefined);
+            
+          if (hasChanges) {
+            // Need setTimeout to avoid React strict mode / render phase alert issues in some browsers
+            // But we are in useEffect, so window.confirm is usually safe here, though it blocks execution.
+            if (window.confirm('従業員情報（基本給や保険料、税区分など）が更新されています。\nこの下書き明細の金額を最新の情報へ書き換えますか？')) {
+              shouldUpdate = true;
+            }
+          }
+          
+          if (shouldUpdate) {
+            if (emp.baseSalary !== undefined) updatedFields.baseSalary = emp.baseSalary;
+            if (emp.titleAllowance !== undefined) updatedFields.titleAllowance = emp.titleAllowance;
+            if (emp.commuteAllowance !== undefined) updatedFields.commuteAllowance = emp.commuteAllowance;
+            if (emp.otherFixedAllowance !== undefined) updatedFields.otherAllowance = emp.otherFixedAllowance;
+            if (emp.fixedHealthInsurance !== undefined) updatedFields.healthInsurance = emp.fixedHealthInsurance || 0;
+            if (emp.fixedCareInsurance !== undefined) updatedFields.careInsurance = emp.fixedCareInsurance || 0;
+            if (emp.fixedWelfarePension !== undefined) updatedFields.welfarePension = emp.fixedWelfarePension || 0;
+            if (emp.fixedLaborInsurance !== undefined) updatedFields.employmentInsurance = emp.fixedLaborInsurance || 0;
+            if (emp.fixedContribution !== undefined) updatedFields.contribution = emp.fixedContribution || 0;
+            if (emp.fixedResidentTax !== undefined) updatedFields.residentTax = emp.fixedResidentTax || 0;
+            if (emp.taxCategory !== undefined) updatedFields.taxCategory = emp.taxCategory;
+            if (emp.dependentsCount !== undefined) updatedFields.dependentsCount = emp.dependentsCount;
+          }
         }
 
         const newFormData = { 
           ...initialFormState, 
           ...slip,
-          taxCategory,
-          dependentsCount,
           ...updatedFields
         };
+        
+        // Ensure taxCategory and dependentsCount fallback correctly
+        if (!newFormData.taxCategory) newFormData.taxCategory = 'ko';
+        if (newFormData.dependentsCount === undefined) newFormData.dependentsCount = 0;
 
         setSelectedEmployeeId(slip.employeeId);
         setTargetYearMonth(slip.targetYearMonth);
@@ -284,11 +311,11 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
         const oldAutoTax = calcIncomeTax(oldTaxableIncome, slip.taxCategory || 'ko', slip.dependentsCount || 0);
         
         const newTaxableIncome = calcTaxableIncome(newFormData);
-        const newAutoTax = calcIncomeTax(newTaxableIncome, taxCategory, dependentsCount);
+        const newAutoTax = calcIncomeTax(newTaxableIncome, newFormData.taxCategory, newFormData.dependentsCount);
         
         let manualOverride = false;
         
-        if (isDraft && emp) {
+        if (shouldUpdate) {
            if (Number(slip.incomeTax) === oldAutoTax || slip.incomeTax === undefined) {
              newFormData.incomeTax = newAutoTax;
            } else {
