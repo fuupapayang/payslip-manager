@@ -84,7 +84,7 @@ export default function Login({ onLoginSuccess }) {
                 id="usernameOrId"
                 type="text"
                 className="form-control"
-                placeholder="EMP001 または email@example.com"
+                placeholder="社員番号 または メールアドレス"
                 value={usernameOrId}
                 onChange={(e) => setUsernameOrId(e.target.value)}
                 disabled={isSubmitting}
