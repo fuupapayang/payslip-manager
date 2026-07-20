@@ -179,10 +179,23 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
 
   // Apply sorting
   const sortedSlips = [...filteredSlips].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
+    let valA = a[sortConfig.key];
+    let valB = b[sortConfig.key];
+    
+    // If sorting by employeeId, extract the numeric part for comparison
+    if (sortConfig.key === 'employeeId') {
+      const numA = parseInt(String(valA).replace(/[^0-9]/g, ''), 10);
+      const numB = parseInt(String(valB).replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        valA = numA;
+        valB = numB;
+      }
+    }
+    
+    if (valA < valB) {
       return sortConfig.direction === 'asc' ? -1 : 1;
     }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
+    if (valA > valB) {
       return sortConfig.direction === 'asc' ? 1 : -1;
     }
     return 0;
