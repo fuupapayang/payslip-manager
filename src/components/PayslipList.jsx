@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { getPayslips, deletePayslip } from '../db';
-import { calcNetPayout, fmt, fmtYearMonth } from '../utils';
-import { Search, FilePlus, Eye, Edit2, Trash2, Calendar } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { getPayslips, deletePayslip, savePayslip } from '../db';
+import { calcNetPayout, fmt, fmtYearMonth, parseNum } from '../utils';
+import { Search, FilePlus, Eye, Edit2, Trash2, Calendar, Download, Upload, ArrowUp, ArrowDown } from 'lucide-react';
+import Papa from 'papaparse';
 
 export default function PayslipList({ navigateTo, session, employeeMode = false }) {
   // If in employee mode, load only their own confirmed payslips
@@ -14,12 +15,149 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
   const [searchNameOrId, setSearchNameOrId] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [statusFilter, setStatusFilter] = useState('すべて');
+  const [sortConfig, setSortConfig] = useState({ key: 'targetYearMonth', direction: 'desc' });
+
+  const fileInputRef = useRef(null);
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleDelete = (id, name, month) => {
     if (window.confirm(`「${name}」の ${month}分 の給与明細を削除しますか？\nこの操作は取り消せません。`)) {
       deletePayslip(id);
       setSlips(getPayslips(targetEmployeeId, targetRole)); // Refresh state
     }
+  };
+
+  const csvHeaderMap = {
+    employeeId: '社員番号',
+    employeeName: '氏名',
+    department: '部署',
+    employmentType: '雇用区分',
+    targetYearMonth: '対象年月',
+    paymentDate: '支給日',
+    status: 'ステータス',
+    workDays: '出勤日数',
+    absenceDays: '欠勤日数',
+    paidLeaveDays: '有休日数',
+    overtimeHours: '残業時間',
+    midnightHours: '深夜残業時間',
+    holidayWorkDays: '休日出勤日数',
+    baseSalary: '基本給',
+    titleAllowance: '役職手当',
+    commuteAllowance: '通勤手当',
+    overtimeAllowance: '残業手当',
+    midnightAllowance: '深夜残業手当',
+    holidayAllowance: '休日出勤手当',
+    otherAllowance: 'その他手当',
+    healthInsurance: '健康保険',
+    careInsurance: '介護保険',
+    welfarePension: '厚生年金',
+    employmentInsurance: '雇用保険',
+    contribution: '搬出金',
+    incomeTax: '所得税',
+    residentTax: '住民税',
+    otherDeduction: 'その他控除',
+    differenceAdjustment: '差額調整費'
+  };
+
+  const reverseCsvHeaderMap = Object.entries(csvHeaderMap).reduce((acc, [key, value]) => {
+    acc[value] = key;
+    return acc;
+  }, {});
+
+  const handleExportCsv = () => {
+    const exportData = filteredSlips.map(slip => {
+      const row = {};
+      Object.keys(csvHeaderMap).forEach(key => {
+        row[csvHeaderMap[key]] = slip[key] !== undefined ? slip[key] : '';
+      });
+      return row;
+    });
+
+    const csvStr = Papa.unparse(exportData);
+    // Add BOM for Excel
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvStr], { type: 'text/csv;charset=utf-8;' });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const filenameMonth = selectedMonth ? `_${selectedMonth}` : '';
+    link.setAttribute('download', `賃金台帳${filenameMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCsv = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsedData = results.data;
+        if (parsedData.length === 0) {
+          alert('CSVファイルにデータがありません。');
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        parsedData.forEach(row => {
+          const slipData = {};
+          let isValid = true;
+
+          // Map CSV headers back to JS keys
+          Object.keys(row).forEach(header => {
+            const key = reverseCsvHeaderMap[header];
+            if (key) {
+              const val = row[header];
+              // Numeric fields
+              if ([
+                'workDays', 'absenceDays', 'paidLeaveDays', 'overtimeHours', 'midnightHours', 'holidayWorkDays',
+                'baseSalary', 'titleAllowance', 'commuteAllowance', 'overtimeAllowance', 'midnightAllowance', 'holidayAllowance', 'otherAllowance',
+                'healthInsurance', 'careInsurance', 'welfarePension', 'employmentInsurance', 'contribution', 'incomeTax', 'residentTax', 'otherDeduction', 'differenceAdjustment'
+              ].includes(key)) {
+                slipData[key] = parseNum(val) || 0;
+              } else {
+                slipData[key] = val;
+              }
+            }
+          });
+
+          // Validation for mandatory fields
+          if (!slipData.employeeId || !slipData.targetYearMonth) {
+            isValid = false;
+          }
+
+          if (isValid) {
+            slipData.status = slipData.status || 'draft';
+            savePayslip(slipData);
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        });
+
+        alert(`インポート完了\n成功: ${successCount}件\n失敗: ${errorCount}件\n(※社員番号と対象年月が必須です)`);
+        setSlips(getPayslips(targetEmployeeId, targetRole)); // Refresh state
+        if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+      },
+      error: (error) => {
+        alert('CSVファイルの読み込みに失敗しました。');
+        console.error(error);
+        if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+      }
+    });
   };
 
   // Filter calculations
@@ -39,6 +177,17 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
     return matchesMonth && matchesSearch && matchesStatus;
   });
 
+  // Apply sorting
+  const sortedSlips = [...filteredSlips].sort((a, b) => {
+    if (a[sortConfig.key] < b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (a[sortConfig.key] > b[sortConfig.key]) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
   return (
     <div>
       <div className="page-header">
@@ -47,13 +196,38 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
         </h1>
         
         {!employeeMode && session.role === 'admin' && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => navigateTo('payslip-create', { editingPayslipId: null })}
-          >
-            <FilePlus size={18} />
-            <span>新規給与明細作成</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input 
+              type="file" 
+              accept=".csv" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handleImportCsv} 
+            />
+            <button 
+              className="btn btn-secondary"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              title="CSVインポート (既存のデータは上書きされます)"
+            >
+              <Upload size={18} />
+              <span>インポート</span>
+            </button>
+            <button 
+              className="btn btn-secondary"
+              onClick={handleExportCsv}
+              title="表示中のデータをCSVとしてダウンロード"
+            >
+              <Download size={18} />
+              <span>エクスポート</span>
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={() => navigateTo('payslip-create', { editingPayslipId: null })}
+            >
+              <FilePlus size={18} />
+              <span>新規給与明細作成</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -137,8 +311,24 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
             <table className="table">
               <thead>
                 <tr>
-                  <th>対象年月</th>
-                  {!employeeMode && <th>社員番号</th>}
+                  <th onClick={() => handleSort('targetYearMonth')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      対象年月
+                      {sortConfig.key === 'targetYearMonth' && (
+                        sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                      )}
+                    </div>
+                  </th>
+                  {!employeeMode && (
+                    <th onClick={() => handleSort('employeeId')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        社員番号
+                        {sortConfig.key === 'employeeId' && (
+                          sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                        )}
+                      </div>
+                    </th>
+                  )}
                   {!employeeMode && <th>氏名</th>}
                   {!employeeMode && <th>部署</th>}
                   <th>支給日</th>
@@ -148,7 +338,7 @@ export default function PayslipList({ navigateTo, session, employeeMode = false 
                 </tr>
               </thead>
               <tbody>
-                {filteredSlips.map(slip => {
+                {sortedSlips.map(slip => {
                   const netPay = calcNetPayout(slip);
                   return (
                     <tr key={slip.id}>

@@ -248,16 +248,60 @@ export default function PayslipCreate({ editingPayslipId, navigateTo }) {
     if (editingPayslipId) {
       const slip = getPayslip(editingPayslipId);
       if (slip) {
-        setFormData({ ...initialFormState, ...slip });
+        const emp = getEmployee(slip.employeeId);
+        // If it's a draft, use the latest fixed settings from the employee master data
+        const isDraft = slip.status === 'draft';
+        const taxCategory = (isDraft && emp && emp.taxCategory) ? emp.taxCategory : (slip.taxCategory || 'ko');
+        const dependentsCount = (isDraft && emp && emp.dependentsCount !== undefined) ? emp.dependentsCount : (slip.dependentsCount || 0);
+        
+        const updatedFields = {};
+        if (isDraft && emp) {
+          if (emp.baseSalary !== undefined) updatedFields.baseSalary = emp.baseSalary;
+          if (emp.titleAllowance !== undefined) updatedFields.titleAllowance = emp.titleAllowance;
+          if (emp.commuteAllowance !== undefined) updatedFields.commuteAllowance = emp.commuteAllowance;
+          if (emp.otherFixedAllowance !== undefined) updatedFields.otherAllowance = emp.otherFixedAllowance;
+          if (emp.fixedHealthInsurance !== undefined) updatedFields.healthInsurance = emp.fixedHealthInsurance || 0;
+          if (emp.fixedCareInsurance !== undefined) updatedFields.careInsurance = emp.fixedCareInsurance || 0;
+          if (emp.fixedWelfarePension !== undefined) updatedFields.welfarePension = emp.fixedWelfarePension || 0;
+          if (emp.fixedLaborInsurance !== undefined) updatedFields.employmentInsurance = emp.fixedLaborInsurance || 0;
+          if (emp.fixedContribution !== undefined) updatedFields.contribution = emp.fixedContribution || 0;
+          if (emp.fixedResidentTax !== undefined) updatedFields.residentTax = emp.fixedResidentTax || 0;
+        }
+
+        const newFormData = { 
+          ...initialFormState, 
+          ...slip,
+          taxCategory,
+          dependentsCount,
+          ...updatedFields
+        };
+
         setSelectedEmployeeId(slip.employeeId);
         setTargetYearMonth(slip.targetYearMonth);
         setPaymentDate(slip.paymentDate);
         
-        const taxableIncome = calcTaxableIncome(slip);
-        const autoTax = calcIncomeTax(taxableIncome, slip.taxCategory || 'ko', slip.dependentsCount || 0);
-        if (Number(slip.incomeTax) !== autoTax) {
-          setIsManualTaxOverride(true);
+        const oldTaxableIncome = calcTaxableIncome(slip);
+        const oldAutoTax = calcIncomeTax(oldTaxableIncome, slip.taxCategory || 'ko', slip.dependentsCount || 0);
+        
+        const newTaxableIncome = calcTaxableIncome(newFormData);
+        const newAutoTax = calcIncomeTax(newTaxableIncome, taxCategory, dependentsCount);
+        
+        let manualOverride = false;
+        
+        if (isDraft && emp) {
+           if (Number(slip.incomeTax) === oldAutoTax || slip.incomeTax === undefined) {
+             newFormData.incomeTax = newAutoTax;
+           } else {
+             manualOverride = true;
+           }
+        } else {
+           if (Number(slip.incomeTax) !== newAutoTax && slip.incomeTax !== undefined) {
+             manualOverride = true;
+           }
         }
+        
+        setFormData(newFormData);
+        setIsManualTaxOverride(manualOverride);
         setViewMode('edit');
       } else {
         alert('指定された給与明細が見つかりません。');
